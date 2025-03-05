@@ -1,0 +1,31 @@
+{
+  "name": "@curatedotfun/rss-service",
+  "version": "0.0.1",
+  "description": "RSS service for curatedotfun",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsc && node dist/index.js",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.2.0",
+    "@upstash/redis": "^1.22.0",
+    "dotenv": "^16.4.7",
+    "feed": "^4.2.2",
+    "hono": "^3.9.0",
+    "ioredis": "^5.5.0",
+    "node-html-parser": "^7.0.1",
+    "sanitize-html": "^2.11.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.1",
+    "ts-node-esm": "^0.0.6",
+    "typescript": "^5.0.0"
+  }
+}

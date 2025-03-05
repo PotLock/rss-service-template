@@ -1,0 +1,15 @@
+{
+  "title": "My RSS Feed",
+  "description": "A feed of curated content",
+  "siteUrl": "https://example.com",
+  "language": "en",
+  "copyright": "© 2025",
+  "image": "https://example.com/logo.png",
+  "favicon": "https://example.com/favicon.ico",
+  "author": {
+    "name": "Feed Author",
+    "email": "author@example.com",
+    "link": "https://author.example.com"
+  },
+  "maxItems": 100
+}
