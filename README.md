@@ -186,6 +186,7 @@ The included `vercel.json` file is already configured for deployment:
 ```
 
 This configuration tells Vercel to:
+
 - Use Node.js to run your application
 - Point to the compiled index.js file
 - Route all requests to your application
