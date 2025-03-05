@@ -2,6 +2,15 @@
 
 A lightweight, scalable RSS feed service built with Hono.js and Upstash Redis. This service allows you to create and manage RSS feeds programmatically through a simple REST API. It's designed to work seamlessly with the `@curatedotfun/rss` plugin in the curate.fun ecosystem.
 
+## Quick Deploy
+
+Deploy your own RSS service with one click:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpotlock%2Frss-service-template)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/potlock/rss-service-template)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/rss-service?referralCode=potlock)
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/potlock/rss-service-template)
+
 ## Features
 
 - **Multiple Feed Formats**: Generate RSS 2.0, Atom, and JSON Feed formats
@@ -150,38 +159,40 @@ For production deployments, this service uses Upstash Redis for storing and retr
 
 ## Cloud Deployment Options
 
+All necessary configuration files for deployment are included in this repository. You can use the one-click deploy buttons at the top of this README, or follow the manual deployment instructions below.
+
 ### Vercel (Recommended with Upstash)
 
 [Vercel](https://vercel.com) and [Upstash](https://upstash.com) have a seamless integration, making this the recommended deployment option:
 
-1. Create a `vercel.json` file in the project root:
+The included `vercel.json` file is already configured for deployment:
 
-   ```json
-   {
-     "version": 2,
-     "builds": [
-       {
-         "src": "dist/index.js",
-         "use": "@vercel/node"
-       }
-     ],
-     "routes": [
-       {
-         "src": "/(.*)",
-         "dest": "dist/index.js"
-       }
-     ]
-   }
-   ```
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/index.js"
+    }
+  ]
+}
+```
 
-   This configuration tells Vercel to:
-   - Use Node.js to run your application
-   - Point to the compiled index.js file
-   - Route all requests to your application
+This configuration tells Vercel to:
+- Use Node.js to run your application
+- Point to the compiled index.js file
+- Route all requests to your application
 
-2. Create a new project in Vercel
-3. Link your repository
-4. Configure the build settings:
+1. Create a new project in Vercel
+2. Link your repository
+3. Configure the build settings:
    - Build Command: `npm run build`
    - Output Directory: `dist`
    - Install Command: `npm install`
@@ -197,13 +208,9 @@ For production deployments, this service uses Upstash Redis for storing and retr
 
 ### Heroku
 
-1. Create a `Procfile` in the project root:
+The repository includes a `Procfile` and `app.json` for Heroku deployment:
 
-   ```cmd
-   web: npm start
-   ```
-
-2. Add Node.js engine specification to your `package.json`:
+1. Add Node.js engine specification to your `package.json`:
 
    ```json
    "engines": {
@@ -233,11 +240,10 @@ For production deployments, this service uses Upstash Redis for storing and retr
 
 ### Netlify
 
+The repository includes a `netlify.toml` file that configures the build settings and serverless functions:
+
 1. Create a new site in [Netlify](https://netlify.com)
 2. Link your repository
-3. Configure the build settings:
-   - Build Command: `npm run build`
-   - Publish Directory: `dist`
 4. Add the required environment variables in the Netlify dashboard:
    - `UPSTASH_REDIS_REST_URL`: Your Upstash Redis REST URL
    - `UPSTASH_REDIS_REST_TOKEN`: Your Upstash Redis REST token
@@ -246,34 +252,14 @@ For production deployments, this service uses Upstash Redis for storing and retr
 
 ### Railway (Docker Deployment)
 
-[Railway](https://railway.app) provides an easy way to deploy Docker containers with minimal configuration:
+[Railway](https://railway.app) provides an easy way to deploy Docker containers with minimal configuration. The repository includes `docker-compose.yml`, `Dockerfile`, and `railway.json` for seamless deployment:
 
 1. Create an account on [Railway](https://railway.app/) if you don't have one
-2. Install the Railway CLI:
-
-   ```cmd
-   npm i -g @railway/cli
-   ```
-
-3. Login to Railway:
-
-   ```cmd
-   railway login
-   ```
-
-4. Initialize a new project:
-
-   ```cmd
-   railway init
-   ```
-
-5. Deploy the service using the existing Docker configuration:
-
-   ```cmd
-   railway up
-   ```
-
-6. Set up the required environment variables in the Railway dashboard:
+2. Click the "Deploy on Railway" button at the top of this README, or:
+   - Install the Railway CLI: `npm i -g @railway/cli`
+   - Login to Railway: `railway login`
+   - Initialize and deploy: `railway init && railway up`
+3. Set up the required environment variables in the Railway dashboard:
    - `UPSTASH_REDIS_REST_URL`: Your Upstash Redis REST URL
    - `UPSTASH_REDIS_REST_TOKEN`: Your Upstash Redis REST token
    - `API_SECRET`: A secure random string for API authentication
