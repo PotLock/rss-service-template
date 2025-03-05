@@ -9,7 +9,6 @@ Deploy your own RSS service with one click:
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpotlock%2Frss-service-template)
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/potlock/rss-service-template)
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/rss-service?referralCode=potlock)
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/potlock/rss-service-template)
 
 ## Features
 
@@ -19,7 +18,7 @@ Deploy your own RSS service with one click:
 - **HTML Sanitization**: Secure content handling with sanitize-html
 - **Simple Authentication**: API secret-based authentication for feed management
 - **Configurable CORS**: Cross-origin request support
-- **Flexible Deployment**: Deploy to various platforms ([Vercel](https://vercel.com), [Netlify](https://netlify.com), [Heroku](https://heroku.com), [Railway](https://railway.app), [Cloudflare](https://workers.cloudflare.com))
+- **Flexible Deployment**: Deploy to various platforms ([Vercel](https://vercel.com), [Netlify](https://netlify.com), [Railway](https://railway.app), [Cloudflare](https://workers.cloudflare.com))
 - **Redis Storage**: Efficient storage with Upstash Redis (production) or Redis mock (development)
 - **Docker Support**: Easy local development with Docker and Docker Compose
 
@@ -207,38 +206,6 @@ This configuration tells Vercel to:
    - This will automatically set up the Redis connection
 7. Deploy your project
 
-### Heroku
-
-The repository includes a `Procfile` and `app.json` for Heroku deployment:
-
-1. Add Node.js engine specification to your `package.json`:
-
-   ```json
-   "engines": {
-     "node": ">=18.0.0"
-   }
-   ```
-
-3. Create a new [Heroku](https://heroku.com) app:
-
-   ```cmd
-   heroku create your-rss-service
-   ```
-
-4. Set the required environment variables:
-
-   ```cmd
-   heroku config:set UPSTASH_REDIS_REST_URL=your-upstash-redis-rest-url
-   heroku config:set UPSTASH_REDIS_REST_TOKEN=your-upstash-redis-rest-token
-   heroku config:set API_SECRET=your-api-secret
-   ```
-
-5. Deploy to Heroku:
-
-   ```cmd
-   git push heroku main
-   ```
-
 ### Netlify
 
 The repository includes a `netlify.toml` file that configures the build settings and serverless functions:
@@ -346,41 +313,7 @@ You can also deploy the RSS service on your own server:
 
 ## Integration with RSS Plugin
 
-The RSS service is designed to work seamlessly with the `@curatedotfun/rss` plugin in the curate.fun ecosystem. To connect the plugin to the service:
-
-1. Initialize the plugin with the service URL and API secret:
-
-```typescript
-import RssPlugin from '@curatedotfun/rss';
-
-const rssPlugin = new RssPlugin();
-await rssPlugin.initialize({
-  serviceUrl: 'https://your-rss-service-url.com',
-  apiSecret: 'your-api-secret'
-});
-```
-
-2. Distribute content through the plugin:
-
-```typescript
-await rssPlugin.distribute({
-  input: {
-    title: "My RSS Item",
-    content: "<p>Content with HTML formatting</p>",
-    link: "https://example.com/article",
-    publishedAt: new Date().toISOString(),
-    author: {
-      name: "John Doe",
-      email: "john@example.com"
-    },
-    categories: ["Technology", "News"]
-  }
-});
-```
-
-The plugin handles validation, formatting, and authentication with the RSS service, making it easy to publish content to your RSS feed.
-
-See the [RSS Plugin README](../README.md) for more details on the plugin's capabilities and configuration options.
+The RSS service is designed to work seamlessly with the `@curatedotfun/rss` plugin in the curate.fun ecosystem. See the [RSS Plugin README](../README.md) for more details on the plugin's capabilities and configuration options.
 
 ## Development
 

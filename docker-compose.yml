@@ -16,6 +16,7 @@ services:
       - API_SECRET=${API_SECRET:-change-this-to-a-secure-random-string}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - CONTAINER_RUNTIME=true
     depends_on:
       - redis
     restart: unless-stopped

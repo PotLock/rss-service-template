@@ -55,30 +55,28 @@ app.get("/raw.json", handleRawJson);
 app.get("/api/items", handleGetItems);
 app.post("/api/items", handleAddItem);
 
-// Start server
-async function startServer() {
-  // Initialize feed
-  await initializeFeed();
+// Initialize feed
+await initializeFeed();
 
-  // Start server if not in production (Vercel will handle this in prod)
-  if (process.env.NODE_ENV !== "production") {
-    const DEFAULT_PORT = 4001;
-    const port = process.env.PORT ? parseInt(process.env.PORT) : DEFAULT_PORT;
-    serve({
-      fetch: app.fetch,
-      port,
-    });
-    console.log(`RSS Service running at http://localhost:${port}`);
-    console.log(`Available formats:`);
-    console.log(`- RSS 2.0: http://localhost:${port}/rss.xml`);
-    console.log(`- Atom: http://localhost:${port}/atom.xml`);
-    console.log(`- JSON Feed: http://localhost:${port}/feed.json`);
-    console.log(`- Raw JSON: http://localhost:${port}/raw.json`);
-    console.log(`- API: http://localhost:${port}/api/items`);
-  }
+// For local development and container-based deployments (e.g. Railway via Docker)
+if (
+  process.env.NODE_ENV !== "production" ||
+  process.env.CONTAINER_RUNTIME === "true"
+) {
+  const DEFAULT_PORT = 4001;
+  const port = process.env.PORT ? parseInt(process.env.PORT) : DEFAULT_PORT;
+  serve({
+    fetch: app.fetch,
+    port,
+  });
+  console.log(`RSS Service running at http://localhost:${port}`);
+  console.log(`Available formats:`);
+  console.log(`- RSS 2.0: http://localhost:${port}/rss.xml`);
+  console.log(`- Atom: http://localhost:${port}/atom.xml`);
+  console.log(`- JSON Feed: http://localhost:${port}/feed.json`);
+  console.log(`- Raw JSON: http://localhost:${port}/raw.json`);
+  console.log(`- API: http://localhost:${port}/api/items`);
 }
 
-startServer().catch(console.error);
-
-// Export the Hono app for serverless environments
-export default app;
+// Export fetch handler for serverless platforms (Vercel, Netlify, etc)
+export default app.fetch as (request: Request) => Promise<Response>;

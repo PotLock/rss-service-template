@@ -21,6 +21,7 @@ EXPOSE $PORT
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=$PORT
+ENV CONTAINER_RUNTIME=true
 
 # Create a non-root user and switch to it
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
