@@ -78,5 +78,5 @@ if (
   console.log(`- API: http://localhost:${port}/api/items`);
 }
 
-// Export fetch handler for serverless platforms (Vercel, Netlify, etc)
-export default app.fetch as (request: Request) => Promise<Response>;
+// Export for serverless platforms (Vercel, Netlify, etc)
+export default app;

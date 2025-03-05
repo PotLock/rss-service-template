@@ -115,31 +115,18 @@ const initializeRedis = async () => {
     return mockRedis;
   } else {
     // Use IoRedis for Docker environment
-    // This is a workaround for TypeScript issues with dynamic imports
-    // In the Docker environment, this will work correctly
     console.log("Using IoRedis with Docker");
-    return {
-      async lrange(key: string, start: number, end: number) {
-        console.log(`Mock lrange: ${key}, ${start}, ${end}`);
-        return [];
+    const { default: Redis } = await import("ioredis");
+    // @ts-ignore
+    return new Redis({
+      host: process.env.REDIS_HOST || "localhost",
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+      maxRetriesPerRequest: 3,
+      retryStrategy(times) {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
       },
-      async lpush(key: string, value: string) {
-        console.log(`Mock lpush: ${key}, ${value}`);
-        return 1;
-      },
-      async ltrim(key: string, start: number, end: number) {
-        console.log(`Mock ltrim: ${key}, ${start}, ${end}`);
-        return "OK";
-      },
-      async exists(key: string) {
-        console.log(`Mock exists: ${key}`);
-        return 0;
-      },
-      async set(key: string, value: string) {
-        console.log(`Mock set: ${key}, ${value}`);
-        return "OK";
-      },
-    };
+    });
   }
 };
 

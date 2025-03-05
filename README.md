@@ -6,9 +6,11 @@ A lightweight, scalable RSS feed service built with Hono.js and Upstash Redis. T
 
 Deploy your own RSS service with one click:
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/pfvWZK?referralCode=3O4l1-)
+
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpotlock%2Frss-service-template)
+
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/potlock/rss-service-template)
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/rss-service?referralCode=potlock)
 
 ## Features
 
