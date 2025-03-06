@@ -78,5 +78,5 @@ if (
   console.log(`- API: http://localhost:${port}/api/items`);
 }
 
-// Export for serverless platforms (Vercel, Netlify, etc)
+// Export for serverless platforms (Netlify, etc)
 export default app;

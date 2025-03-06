@@ -8,8 +8,6 @@ Deploy your own RSS service with one click:
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/pfvWZK?referralCode=3O4l1-)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpotlock%2Frss-service-template)
-
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/potlock/rss-service-template)
 
 ## Features
@@ -132,16 +130,6 @@ Click the "Deploy on Railway" button at the top of this README to:
 After deployment, you only need to:
 
 1. Set the `API_SECRET` environment variable in your Railway dashboard
-
-### Vercel (Edge Runtime)
-
-The service uses Vercel's Edge Runtime and requires Upstash integration:
-
-1. Click the "Deploy with Vercel" button above
-2. Set up Upstash integration (Required):
-   - Go to "Integrations" in your Vercel project
-   - Add the Upstash integration
-3. Set the `API_SECRET` environment variable
 
 ### Netlify
 

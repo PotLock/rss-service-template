@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "**": {
-      "runtime": "edge"
-    }
-  }
-}
