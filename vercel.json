@@ -1,3 +1,7 @@
 {
-  "runtime": "edge"
+  "functions": {
+    "/**": {
+      "runtime": "edge"
+    }
+  }
 }

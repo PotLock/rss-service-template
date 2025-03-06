@@ -124,6 +124,7 @@ const initializeRedis = async () => {
         console.log("Connecting to Redis using REDIS_URL");
         // @ts-ignore
         return new Redis(process.env.REDIS_URL, {
+          family: 0, // Enable dual stack lookup (IPv4 and IPv6)
           maxRetriesPerRequest: 5,
           retryStrategy(times) {
             const delay = Math.min(times * 100, 3000);
@@ -142,6 +143,7 @@ const initializeRedis = async () => {
         return new Redis({
           host,
           port,
+          family: 0, // Enable dual stack lookup (IPv4 and IPv6)
           maxRetriesPerRequest: 5,
           retryStrategy(times) {
             const delay = Math.min(times * 100, 3000);
@@ -158,6 +160,7 @@ const initializeRedis = async () => {
       return new Redis({
         host: "localhost",
         port: 6379,
+        family: 0, // Enable dual stack lookup (IPv4 and IPv6)
         maxRetriesPerRequest: 3,
         retryStrategy(times) {
           const delay = Math.min(times * 50, 2000);
