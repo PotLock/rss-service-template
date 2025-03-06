@@ -114,19 +114,60 @@ const initializeRedis = async () => {
 
     return mockRedis;
   } else {
-    // Use IoRedis for Docker environment
-    console.log("Using IoRedis with Docker");
+    // Use IoRedis for Docker/Railway environment
+    console.log("Using IoRedis for Docker/Railway environment");
     const { default: Redis } = await import("ioredis");
-    // @ts-ignore
-    return new Redis({
-      host: process.env.REDIS_HOST || "localhost",
-      port: parseInt(process.env.REDIS_PORT || "6379"),
-      maxRetriesPerRequest: 3,
-      retryStrategy(times) {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
-    });
+
+    try {
+      // Railway provides REDIS_URL when services are linked
+      if (process.env.REDIS_URL) {
+        console.log("Connecting to Redis using REDIS_URL");
+        // @ts-ignore
+        return new Redis(process.env.REDIS_URL, {
+          maxRetriesPerRequest: 5,
+          retryStrategy(times) {
+            const delay = Math.min(times * 100, 3000);
+            return delay;
+          },
+        });
+      }
+
+      // For Docker Compose environments
+      if (process.env.REDIS_HOST) {
+        const host = process.env.REDIS_HOST;
+        const port = parseInt(process.env.REDIS_PORT || "6379");
+        console.log(`Connecting to Redis at ${host}:${port}`);
+
+        // @ts-ignore
+        return new Redis({
+          host,
+          port,
+          maxRetriesPerRequest: 5,
+          retryStrategy(times) {
+            const delay = Math.min(times * 100, 3000);
+            return delay;
+          },
+        });
+      }
+
+      // Last resort fallback - not recommended for production
+      console.warn(
+        "No Redis configuration found, falling back to localhost (not recommended for production)",
+      );
+      // @ts-ignore
+      return new Redis({
+        host: "localhost",
+        port: 6379,
+        maxRetriesPerRequest: 3,
+        retryStrategy(times) {
+          const delay = Math.min(times * 50, 2000);
+          return delay;
+        },
+      });
+    } catch (error) {
+      console.error("Failed to connect to Redis:", error);
+      throw error;
+    }
   }
 };
 
