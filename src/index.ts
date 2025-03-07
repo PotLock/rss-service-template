@@ -10,6 +10,7 @@ import {
   handleRawJson,
   handleGetItems,
   handleAddItem,
+  handleHealth,
 } from "./routes.js";
 import { authenticate } from "./middleware.js";
 import { initializeFeed } from "./storage.js";
@@ -48,6 +49,7 @@ app.use("/api/*", authenticate);
 
 // Register routes
 app.get("/", handleRoot);
+app.get("/health", handleHealth);
 app.get("/rss.xml", handleRss);
 app.get("/atom.xml", handleAtom);
 app.get("/feed.json", handleJsonFeed);
