@@ -1,6 +1,4 @@
 import "dotenv/config";
-import fs from "fs";
-import path from "path";
 import { FeedConfig } from "./types.js";
 
 // Environment variables validation
@@ -65,23 +63,32 @@ const DEFAULT_CONFIG: FeedConfig = {
   author: { name: "Feed Author", email: "author@example.com" },
 };
 
-// Load feed configuration from JSON file
-export function loadConfig(): FeedConfig {
-  const CONFIG_FILE_PATH = path.join(process.cwd(), "feed-config.json");
+let currentConfig: FeedConfig | null = null;
 
-  try {
-    const configFile = fs.readFileSync(CONFIG_FILE_PATH, "utf8");
-    const config = JSON.parse(configFile) as FeedConfig;
-    console.log("Loaded feed configuration from feed-config.json");
-    return config;
-  } catch (error) {
-    console.warn(
-      "Could not load feed-config.json, using default configuration",
-    );
-    return DEFAULT_CONFIG;
-  }
+// Set feed configuration
+export function setFeedConfig(config: FeedConfig): void {
+  config.id = DEFAULT_FEED_ID;
+
+  // Set default values for optional fields if not provided
+  config.title = config.title || DEFAULT_CONFIG.title;
+  config.description = config.description || DEFAULT_CONFIG.description;
+  config.siteUrl = config.siteUrl || DEFAULT_CONFIG.siteUrl;
+
+  // Ensure maxItems is always a positive number
+  config.maxItems =
+    typeof config.maxItems === "number" && config.maxItems > 0
+      ? config.maxItems
+      : DEFAULT_CONFIG.maxItems;
+
+  config.language = config.language || DEFAULT_CONFIG.language;
+
+  // Update the in-memory configuration
+  currentConfig = config;
+  console.log("Updated feed configuration");
 }
 
+// Get the current feed configuration
 export const getFeedConfig = (): FeedConfig => {
-  return loadConfig();
+  const config = currentConfig || DEFAULT_CONFIG;
+  return JSON.parse(JSON.stringify(config)) as FeedConfig;
 };

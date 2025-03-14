@@ -11,6 +11,8 @@ import {
   handleGetItems,
   handleAddItem,
   handleHealth,
+  handleUpdateConfig,
+  handleGetConfig,
 } from "./routes.js";
 import { authenticate } from "./middleware.js";
 import { initializeFeed } from "./storage.js";
@@ -56,6 +58,8 @@ app.get("/feed.json", handleJsonFeed);
 app.get("/raw.json", handleRawJson);
 app.get("/api/items", handleGetItems);
 app.post("/api/items", handleAddItem);
+app.get("/api/config", handleGetConfig);
+app.put("/api/config", handleUpdateConfig);
 
 // Initialize feed
 await initializeFeed();

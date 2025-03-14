@@ -1,9 +1,8 @@
-import { DEFAULT_FEED_ID, getFeedConfig } from "./config.js";
-import { RssItem } from "./types.js";
+import { DEFAULT_FEED_ID, getFeedConfig, setFeedConfig } from "./config.js";
+import { FeedConfig, RssItem } from "./types.js";
 
 // Initialize Redis client based on environment
 let redis: any;
-const feedConfig = getFeedConfig();
 
 // Determine which Redis client to use
 const initializeRedis = async () => {
@@ -185,6 +184,7 @@ export { redis };
  */
 export async function getItems(): Promise<string[]> {
   const itemsKey = `feed:${DEFAULT_FEED_ID}:items`;
+  const config = getFeedConfig();
 
   // Log the current storage state when in development mode
   if (process.env.USE_REDIS_MOCK === "true" && redis.getStorageState) {
@@ -202,7 +202,7 @@ export async function getItems(): Promise<string[]> {
   }
 
   // If not using mock or no items in storage, use standard Redis API
-  return await redis.lrange(itemsKey, 0, feedConfig.maxItems - 1);
+  return await redis.lrange(itemsKey, 0, config.maxItems - 1);
 }
 
 /**
@@ -210,15 +210,13 @@ export async function getItems(): Promise<string[]> {
  */
 export async function addItem(item: RssItem): Promise<void> {
   console.log("pushing item");
+  const config = getFeedConfig();
+
   // Add item to feed's items list
   await redis.lpush(`feed:${DEFAULT_FEED_ID}:items`, JSON.stringify(item));
 
   // Trim to max items
-  await redis.ltrim(
-    `feed:${DEFAULT_FEED_ID}:items`,
-    0,
-    feedConfig.maxItems - 1,
-  );
+  await redis.ltrim(`feed:${DEFAULT_FEED_ID}:items`, 0, config.maxItems - 1);
 }
 
 /**
@@ -231,8 +229,91 @@ export async function initializeFeed(): Promise<void> {
     await redis.set(
       `feed:${DEFAULT_FEED_ID}`,
       JSON.stringify({
-        feedConfig,
+        feedConfig: getFeedConfig(),
       }),
     );
+  } else {
+    // Load existing configuration from Redis
+    try {
+      const feedData = await redis.get(`feed:${DEFAULT_FEED_ID}`);
+      if (feedData) {
+        try {
+          const parsedData = JSON.parse(feedData);
+          if (parsedData?.feedConfig) {
+            setFeedConfig(parsedData.feedConfig);
+            console.log("Loaded feed configuration from Redis");
+          } else {
+            console.warn(
+              "Invalid feed configuration format in Redis, using default",
+            );
+          }
+        } catch (parseError) {
+          console.warn(
+            "Error parsing feed configuration from Redis:",
+            parseError,
+          );
+          console.warn("Using default configuration instead");
+        }
+      }
+    } catch (error) {
+      console.warn("Error loading feed configuration from Redis:", error);
+    }
+  }
+}
+
+/**
+ * Save feed configuration to Redis
+ */
+export async function saveFeedConfig(config: FeedConfig): Promise<void> {
+  try {
+    // Update the feed configuration in Redis
+    const exists = await redis.exists(`feed:${DEFAULT_FEED_ID}`);
+    if (exists) {
+      try {
+        // Get existing data
+        const feedData = await redis.get(`feed:${DEFAULT_FEED_ID}`);
+        let parsedData;
+
+        try {
+          parsedData = JSON.parse(feedData);
+        } catch (parseError) {
+          console.warn(
+            "Error parsing existing feed data, creating new data structure",
+          );
+          parsedData = {};
+        }
+
+        // Update the configuration
+        parsedData.feedConfig = config;
+
+        // Save back to Redis
+        await redis.set(`feed:${DEFAULT_FEED_ID}`, JSON.stringify(parsedData));
+      } catch (redisError) {
+        // If there's an error with the existing data, create a new entry
+        console.warn(
+          "Error with existing Redis data, creating new entry:",
+          redisError,
+        );
+        await redis.set(
+          `feed:${DEFAULT_FEED_ID}`,
+          JSON.stringify({
+            feedConfig: config,
+          }),
+        );
+      }
+    } else {
+      // Create new feed entry
+      await redis.set(
+        `feed:${DEFAULT_FEED_ID}`,
+        JSON.stringify({
+          feedConfig: config,
+        }),
+      );
+    }
+
+    console.log("Saved feed configuration to Redis");
+  } catch (error) {
+    console.error("Error saving feed configuration to Redis:", error);
+    throw new Error(`Failed to save feed configuration: ${error}`);
   }
 }

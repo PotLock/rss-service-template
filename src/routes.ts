@@ -1,8 +1,9 @@
 import { Context } from "hono";
 import { v4 as uuidv4 } from "uuid";
 import { formatItems, generateFeed } from "./formatters.js";
-import { addItem, getItems } from "./storage.js";
-import { ApiFormat, RssItem } from "./types.js";
+import { getFeedConfig, setFeedConfig } from "./config.js";
+import { addItem, getItems, saveFeedConfig } from "./storage.js";
+import { ApiFormat, FeedConfig, RssItem } from "./types.js";
 import { sanitize } from "./utils.js";
 
 /**
@@ -67,6 +68,53 @@ export async function handleRawJson(): Promise<Response> {
 }
 
 /**
+ * Update feed configuration
+ */
+export async function handleUpdateConfig(c: Context): Promise<Response> {
+  let inputConfig: any;
+  try {
+    inputConfig = await c.req.json();
+  } catch (error) {
+    return c.json(
+      {
+        error: "Invalid JSON",
+        message: "The request body must be valid JSON",
+      },
+      400,
+    );
+  }
+
+  try {
+    // Update the configuration
+    setFeedConfig(inputConfig as FeedConfig);
+
+    // Save to Redis
+    await saveFeedConfig(getFeedConfig());
+
+    return c.json({
+      message: "Feed configuration updated successfully",
+      config: getFeedConfig(),
+    });
+  } catch (error) {
+    console.error("Failed to update feed configuration:", error);
+    return c.json(
+      {
+        error: "Configuration Error",
+        message: `Failed to update feed configuration: ${error}`,
+      },
+      500,
+    );
+  }
+}
+
+/**
+ * Get current feed configuration
+ */
+export async function handleGetConfig(c: Context): Promise<Response> {
+  return c.json(getFeedConfig());
+}
+
+/**
  * Get all items with format options
  */
 export async function handleGetItems(c: Context): Promise<Response> {
@@ -94,9 +142,9 @@ export async function handleGetItems(c: Context): Promise<Response> {
  * Add item to feed
  */
 export async function handleAddItem(c: Context): Promise<Response> {
-  let item: RssItem;
+  let inputItem: any;
   try {
-    item = await c.req.json<RssItem>();
+    inputItem = await c.req.json();
   } catch (error) {
     return c.json(
       {
@@ -107,18 +155,24 @@ export async function handleAddItem(c: Context): Promise<Response> {
     );
   }
 
-  // Validate required fields
-  if (!item.content) {
+  // Map publishedAt to published if it exists
+  if (inputItem.publishedAt && !inputItem.published) {
+    inputItem.published = inputItem.publishedAt;
+  }
+
+  // Validate and provide defaults for required fields
+  if (!inputItem.content && !inputItem.description) {
     return c.json(
       {
-        error: "Missing required field: content",
-        message: "The content field is required for RSS items",
+        error: "Missing required field: content or description",
+        message:
+          "Either content or description field is required for RSS items",
       },
       400,
     );
   }
 
-  if (!item.link) {
+  if (!inputItem.link) {
     return c.json(
       {
         error: "Missing required field: link",
@@ -128,18 +182,69 @@ export async function handleAddItem(c: Context): Promise<Response> {
     );
   }
 
-  // Ensure required fields have values
+  // Handle categories conversion if needed
+  let category;
+  if (inputItem.categories) {
+    if (Array.isArray(inputItem.categories)) {
+      if (typeof inputItem.categories[0] === "string") {
+        category = inputItem.categories.map((cat: string) => ({
+          name: cat,
+        }));
+      } else {
+        category = inputItem.categories;
+      }
+    } else if (typeof inputItem.categories === "string") {
+      category = [{ name: inputItem.categories }];
+    }
+  }
+
+  // Handle author conversion if needed
+  let author;
+  if (inputItem.author) {
+    author = Array.isArray(inputItem.author)
+      ? inputItem.author
+      : [inputItem.author];
+  }
+
+  // Create a complete RssItem with all required fields and sanitized content
   const completeItem: RssItem = {
-    ...item,
-    id: item.id || uuidv4(),
-    guid: item.guid || uuidv4(),
+    // Core fields with defaults
+    id: inputItem.id || uuidv4(),
+    guid: inputItem.guid || inputItem.link || uuidv4(),
+    title: sanitize(inputItem.title || "Untitled"),
+    description: sanitize(inputItem.description || ""),
+    content: sanitize(inputItem.content || inputItem.description || ""),
+    link: inputItem.link,
 
-    title: sanitize(item.title),
-    description: sanitize(item.description || ""),
-    content: sanitize(item.content),
+    // Dates
+    published: inputItem.published ? new Date(inputItem.published) : new Date(),
+    date: inputItem.date ? new Date(inputItem.date) : new Date(),
 
-    published: item.published ? new Date(item.published) : new Date(),
-    date: item.date ? new Date(item.date) : new Date(),
+    // Optional fields
+    ...(author && { author }),
+    ...(category && { category }),
+
+    // Media fields
+    ...(inputItem.image && {
+      image:
+        typeof inputItem.image === "string" ? inputItem.image : inputItem.image,
+    }),
+    ...(inputItem.audio && {
+      audio:
+        typeof inputItem.audio === "string" ? inputItem.audio : inputItem.audio,
+    }),
+    ...(inputItem.video && {
+      video:
+        typeof inputItem.video === "string" ? inputItem.video : inputItem.video,
+    }),
+    ...(inputItem.enclosure && { enclosure: inputItem.enclosure }),
+
+    // Additional metadata
+    ...(inputItem.source && { source: inputItem.source }),
+    ...(inputItem.isPermaLink !== undefined && {
+      isPermaLink: inputItem.isPermaLink,
+    }),
+    ...(inputItem.copyright && { copyright: inputItem.copyright }),
   };
 
   // Add item to feed's items list
