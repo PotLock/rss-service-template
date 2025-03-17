@@ -60,30 +60,32 @@ The API secret is configured through the `API_SECRET` environment variable and s
 
 ## Feed Configuration
 
-The RSS service can be configured using a `feed-config.json` file in the project root:
+The RSS service can be configured through the `/api/config` API endpoint:
 
-```json
-{
-  "feed": {
+| Endpoint | Method | Description | Authentication | Response Format |
+|----------|--------|-------------|----------------|-----------------|
+| `/api/config` | GET | Get current feed configuration | No | `application/json` |
+| `/api/config` | PUT | Update feed configuration | Yes | `application/json` |
+
+Example configuration request:
+
+```bash
+curl -X PUT https://your-service.com/api/config \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-api-secret" \
+  -d '{
     "title": "My RSS Feed",
     "description": "A feed of curated content",
     "siteUrl": "https://example.com",
     "language": "en",
     "copyright": "© 2025",
-    "favicon": "https://example.com/favicon.ico",
     "author": {
       "name": "Feed Author",
-      "email": "author@example.com",
-      "link": "https://author.example.com"
+      "email": "author@example.com"
     },
-    "preferredFormat": "rss",
-    "maxItems": 100
-  },
-  "customization": {
-    "categories": ["Technology", "News"],
+    "maxItems": 100,
     "image": "https://example.com/logo.png"
-  }
-}
+  }'
 ```
 
 ## Development
