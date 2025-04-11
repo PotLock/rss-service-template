@@ -5,6 +5,12 @@ import { getFeedConfig, setFeedConfig } from "./config.js";
 import { addItem, getItems, saveFeedConfig } from "./storage.js";
 import { ApiFormat, FeedConfig, RssItem } from "./types.js";
 import { sanitize } from "./utils.js";
+import {
+  cacheFeed,
+  getCachedFeed,
+  invalidateCache,
+  isCacheValid,
+} from "./cache.js";
 
 /**
  * Health check endpoint
@@ -30,41 +36,109 @@ export async function handleRoot(c: Context): Promise<Response> {
 /**
  * Handle RSS format request
  */
-export async function handleRss(): Promise<Response> {
-  const { content, contentType } = generateFeed(await getItems(), "rss");
-  return new Response(content, {
-    headers: { "Content-Type": contentType },
-  });
+export async function handleRss(c: Context): Promise<Response> {
+  return await handleFeedRequest(c, "rss");
 }
 
 /**
  * Handle Atom format request
  */
-export async function handleAtom(): Promise<Response> {
-  const { content, contentType } = generateFeed(await getItems(), "atom");
-  return new Response(content, {
-    headers: { "Content-Type": contentType },
-  });
+export async function handleAtom(c: Context): Promise<Response> {
+  return await handleFeedRequest(c, "atom");
 }
 
 /**
  * Handle JSON Feed format request (includes HTML)
  */
-export async function handleJsonFeed(): Promise<Response> {
-  const { content, contentType } = generateFeed(await getItems(), "json");
-  return new Response(content, {
-    headers: { "Content-Type": contentType },
-  });
+export async function handleJsonFeed(c: Context): Promise<Response> {
+  return await handleFeedRequest(c, "json");
 }
 
 /**
  * Handle Raw JSON format request
  */
-export async function handleRawJson(): Promise<Response> {
-  const { content, contentType } = generateFeed(await getItems(), "raw");
-  return new Response(content, {
-    headers: { "Content-Type": contentType },
-  });
+export async function handleRawJson(c: Context): Promise<Response> {
+  return await handleFeedRequest(c, "raw");
+}
+
+/**
+ * Common handler for all feed format requests with caching
+ */
+async function handleFeedRequest(
+  c: Context,
+  format: "rss" | "atom" | "json" | "raw",
+): Promise<Response> {
+  try {
+    // Check if we have a cached version
+    const cached = await getCachedFeed(format);
+
+    if (cached) {
+      // Check if client cache is still valid
+      if (isCacheValid(c.req.raw.headers, cached.metadata)) {
+        return new Response(null, {
+          status: 304,
+          headers: {
+            ETag: cached.metadata.etag,
+            "Last-Modified": cached.metadata.lastModified,
+            "Cache-Control": "public, max-age=600", // 10 minutes
+          },
+        });
+      }
+
+      // Return cached content with cache headers
+      return new Response(cached.content, {
+        headers: {
+          "Content-Type": getContentType(format),
+          ETag: cached.metadata.etag,
+          "Last-Modified": cached.metadata.lastModified,
+          "Cache-Control": "public, max-age=600", // 10 minutes
+        },
+      });
+    }
+
+    // Generate fresh content
+    const { content, contentType } = generateFeed(await getItems(), format);
+
+    // Cache the generated content
+    const metadata = await cacheFeed(format, content);
+
+    // Return fresh content with cache headers
+    return new Response(content, {
+      headers: {
+        "Content-Type": contentType,
+        ETag: metadata.etag,
+        "Last-Modified": metadata.lastModified,
+        "Cache-Control": "public, max-age=600", // 10 minutes
+      },
+    });
+  } catch (error) {
+    console.error(`Error generating ${format} feed:`, error);
+    return new Response(
+      JSON.stringify({
+        error: "Feed Generation Error",
+        message: `Failed to generate ${format} feed: ${error}`,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+}
+
+/**
+ * Get content type for a feed format
+ */
+function getContentType(format: "rss" | "atom" | "json" | "raw"): string {
+  switch (format) {
+    case "atom":
+      return "application/atom+xml; charset=utf-8";
+    case "json":
+    case "raw":
+      return "application/json; charset=utf-8";
+    default:
+      return "application/rss+xml; charset=utf-8";
+  }
 }
 
 /**
@@ -90,6 +164,9 @@ export async function handleUpdateConfig(c: Context): Promise<Response> {
 
     // Save to Redis
     await saveFeedConfig(getFeedConfig());
+
+    // Invalidate all feed caches when configuration changes
+    await invalidateCache();
 
     return c.json({
       message: "Feed configuration updated successfully",
@@ -250,6 +327,10 @@ export async function handleAddItem(c: Context): Promise<Response> {
   // Add item to feed's items list
   try {
     await addItem(completeItem);
+
+    // Invalidate all feed caches when a new item is added
+    await invalidateCache();
+
     return c.json({
       message: "Item added successfully",
       item: completeItem,
