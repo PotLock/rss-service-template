@@ -20,6 +20,42 @@ Deploy your own RSS service with one click:
 - **Configurable CORS**: Cross-origin request support
 - **Redis Storage**: Efficient storage with Upstash Redis (production) or Redis mock (development)
 - **Docker Support**: Easy local development with Docker and Docker Compose
+- **Rate Limiting**: Protects public endpoints from abuse (100 requests per 5 minutes per IP)
+- **Security Headers**: Essential security headers for better protection
+- **Request Timeout**: 30-second timeout protection for all requests
+
+## Security Features
+
+### Rate Limiting
+
+The service includes rate limiting for public endpoints (GET requests):
+- 100 requests per 5 minutes per IP address
+- Rate limit headers included in responses:
+  - `X-RateLimit-Limit`: Maximum requests per window
+  - `X-RateLimit-Remaining`: Remaining requests in current window
+  - `X-RateLimit-Reset`: Time when the rate limit resets.
+
+Write operations (POST, PUT) are protected by API key authentication and not rate-limited.
+
+### Security Headers
+
+All responses include essential security headers specifically chosen for an RSS service:
+
+- `X-Content-Type-Options: nosniff`
+  - Critical for an RSS service that serves multiple content types (RSS XML, Atom XML, JSON)
+  - Ensures browsers strictly respect our content type headers
+  - Prevents content type confusion that could lead to security issues
+  - Example: Ensures RSS XML is always treated as XML, not executed as something else
+
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+  - Forces browsers to use HTTPS for all requests to your domain
+  - Essential for protecting feed content and API credentials in transit
+  - max-age=31536000: Remember this rule for 1 year
+  - includeSubDomains: Apply to all subdomains too
+
+### Request Timeout
+
+All requests have a 30-second timeout protection to prevent resource exhaustion.
 
 ## API Endpoints
 

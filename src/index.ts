@@ -15,6 +15,11 @@ import {
   handleGetConfig,
 } from "./routes.js";
 import { authenticate } from "./middleware.js";
+import {
+  rateLimiter,
+  securityHeaders,
+  requestTimeout,
+} from "./middleware/protection.js";
 import { initializeFeed } from "./storage.js";
 
 // Validate environment variables
@@ -27,6 +32,15 @@ try {
 
 // Create Hono app
 const app = new Hono();
+
+// Add security headers to all responses
+app.use("*", securityHeaders);
+
+// Add request timeout protection
+app.use("*", requestTimeout);
+
+// Add rate limiting for public endpoints
+app.use("*", rateLimiter);
 
 // Global error handler
 app.onError((err, c) => {
