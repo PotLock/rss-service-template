@@ -1,11 +1,5 @@
-import { Redis } from "@upstash/redis";
 import { Context, Next } from "hono";
-
-// Initialize Redis client
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+import { redis } from "../storage.js";
 
 // Rate limit configuration
 const RATE_LIMIT = {
@@ -20,7 +14,6 @@ const memCache = new Map<string, { count: number; expires: number }>();
 /**
  * Rate limiting middleware for public endpoints
  * Uses Redis to track request counts across multiple instances
- * Optimized to use Redis pipeline for better performance
  */
 export async function rateLimiter(
   c: Context,
@@ -41,7 +34,6 @@ export async function rateLimiter(
     let requests: number;
     let ttl: number;
 
-    // Check memory cache first to avoid Redis calls for frequent requests
     const now = Date.now();
     const cached = memCache.get(key);
 
