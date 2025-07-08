@@ -4,6 +4,7 @@ import { DuplicateItemError, FeedNotFoundError } from "./errors.js";
 import { formatItems, generateFeed } from "./formatters.js";
 import {
   addItem,
+  clearItems,
   createFeed,
   feedExists,
   getAllFeedIds,
@@ -77,6 +78,55 @@ export async function handleListFeeds(c: Context): Promise<Response> {
       {
         error: "Server Error",
         message: "Failed to list feeds",
+      },
+      500,
+    );
+  }
+}
+
+/**
+ * Clear all items from a specific feed
+ */
+export async function handleClearItems(c: Context): Promise<Response> {
+  const feedId = c.req.param("feedId");
+  if (!feedId) {
+    return c.json({ error: "Feed ID is required" }, 400);
+  }
+
+  try {
+    if (!(await feedExists(feedId))) {
+      return c.json(
+        {
+          error: "Feed Not Found",
+          message: `Feed with ID '${feedId}' does not exist`,
+        },
+        404,
+      );
+    }
+
+    await clearItems(feedId);
+
+    return c.json({
+      message: "All items cleared successfully",
+      feedId,
+    });
+  } catch (error) {
+    console.error("Failed to clear feed items:", error);
+
+    if (error instanceof FeedNotFoundError) {
+      return c.json(
+        {
+          error: "Feed Not Found",
+          message: error.message,
+        },
+        404,
+      );
+    }
+
+    return c.json(
+      {
+        error: "Server Error",
+        message: `Failed to clear feed items: ${error}`,
       },
       500,
     );

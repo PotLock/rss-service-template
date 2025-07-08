@@ -11,6 +11,7 @@ import { rateLimiter } from "./middleware/rate-limit.js";
 import {
   handleAddItem,
   handleAtom,
+  handleClearItems,
   handleCreateFeed,
   handleGetConfig,
   handleGetItems,
@@ -82,6 +83,10 @@ feedRoutes.get("/:feedId/rss.xml", handleRss);
 feedRoutes.get("/:feedId/atom.xml", handleAtom);
 feedRoutes.get("/:feedId/feed.json", handleJsonFeed);
 feedRoutes.get("/:feedId/raw.json", handleRawJson);
+feedRoutes.get("/:feedId", (c) => {
+  const feedId = c.req.param("feedId");
+  return c.redirect(`/${feedId}/feed.json`, 301);
+});
 
 // Protected API routes (authentication required)
 const protectedRoutes = new Hono();
@@ -91,6 +96,7 @@ protectedRoutes.get("/api/feeds/:feedId/config", handleGetConfig);
 protectedRoutes.put("/api/feeds/:feedId/config", handleUpdateConfig);
 protectedRoutes.get("/api/feeds/:feedId/items", handleGetItems);
 protectedRoutes.post("/api/feeds/:feedId/items", handleAddItem);
+protectedRoutes.delete("/api/feeds/:feedId/items", handleClearItems);
 
 app.route("/", publicRoutes);
 app.route("/", feedRoutes);

@@ -333,6 +333,31 @@ export async function addItem(feedId: string, item: RssItem): Promise<void> {
 }
 
 /**
+ * Clear all items from a specific feed
+ */
+export async function clearItems(feedId: string): Promise<void> {
+  try {
+    if (!(await feedExists(feedId))) {
+      throw new FeedNotFoundError(feedId);
+    }
+
+    const itemsKey = `feed:${feedId}:items`;
+    const guidsKey = `feed:${feedId}:guids`;
+
+    // Delete all items and GUIDs
+    await redis.del(itemsKey);
+    await redis.del(guidsKey);
+
+    console.log(`Cleared all items from feed: ${feedId}`);
+  } catch (error) {
+    if (error instanceof FeedNotFoundError) {
+      throw error;
+    }
+    throw new StorageError(`Failed to clear items: ${error}`);
+  }
+}
+
+/**
  * Get a list of all feed IDs
  */
 export async function getAllFeedIds(): Promise<string[]> {
