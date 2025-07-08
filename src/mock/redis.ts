@@ -232,6 +232,96 @@ export class RedisMock {
   }
 
   /**
+   * Check if a member exists in a set
+   * For duplicate checking
+   */
+  async sismember(key: string, member: string): Promise<number> {
+    console.log(`[MOCK REDIS] sismember: ${key}, ${member}`);
+
+    if (!inMemoryStorage[key] || !Array.isArray(inMemoryStorage[key])) {
+      return 0;
+    }
+
+    const exists = inMemoryStorage[key].includes(member);
+    return exists ? 1 : 0;
+  }
+
+  /**
+   * Add a member to a set
+   * For duplicate checking
+   */
+  async sadd(key: string, member: string): Promise<number> {
+    console.log(`[MOCK REDIS] sadd: ${key}, ${member}`);
+
+    if (!inMemoryStorage[key]) {
+      inMemoryStorage[key] = [];
+    } else if (!Array.isArray(inMemoryStorage[key])) {
+      // Convert to array if it's not already
+      inMemoryStorage[key] = [inMemoryStorage[key]];
+    }
+
+    // Check if member already exists
+    if (inMemoryStorage[key].includes(member)) {
+      return 0; // Member already exists
+    }
+
+    inMemoryStorage[key].push(member);
+    return 1; // Member was added
+  }
+
+  /**
+   * Remove a member from a set
+   * For duplicate checking cleanup
+   */
+  async srem(key: string, member: string): Promise<number> {
+    console.log(`[MOCK REDIS] srem: ${key}, ${member}`);
+
+    if (!inMemoryStorage[key] || !Array.isArray(inMemoryStorage[key])) {
+      return 0;
+    }
+
+    const index = inMemoryStorage[key].indexOf(member);
+    if (index === -1) {
+      return 0; // Member not found
+    }
+
+    inMemoryStorage[key].splice(index, 1);
+    return 1; // Member was removed
+  }
+
+  /**
+   * Get the length of a list
+   * For item count checking
+   */
+  async llen(key: string): Promise<number> {
+    console.log(`[MOCK REDIS] llen: ${key}`);
+
+    if (!inMemoryStorage[key] || !Array.isArray(inMemoryStorage[key])) {
+      return 0;
+    }
+
+    return inMemoryStorage[key].length;
+  }
+
+  /**
+   * Get all keys matching a pattern
+   * For getting all feed IDs
+   */
+  async keys(pattern: string): Promise<string[]> {
+    console.log(`[MOCK REDIS] keys: ${pattern}`);
+
+    const regex = new RegExp(pattern.replace(/\*/g, ".*"));
+    const matchingKeys = Object.keys(inMemoryStorage).filter((key) =>
+      regex.test(key),
+    );
+
+    console.log(
+      `[MOCK REDIS] Found ${matchingKeys.length} keys matching pattern: ${pattern}`,
+    );
+    return matchingKeys;
+  }
+
+  /**
    * Helper method to inspect the current state (not part of Redis API)
    */
   getStorageState(): Record<string, any> {

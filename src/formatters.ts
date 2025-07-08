@@ -1,6 +1,5 @@
 import { Feed, Item } from "feed";
-import { getFeedConfig } from "./config.js";
-import { ApiFormat, FeedFormat, RssItem } from "./types.js";
+import { ApiFormat, FeedFormat, RssItem, FeedConfig } from "./types.js";
 import { stripHtml } from "./utils.js";
 
 /**
@@ -71,9 +70,9 @@ export function formatItems(
  */
 export function generateFeed(
   items: string[],
+  feedConfig: FeedConfig,
   format: FeedFormat = "rss",
 ): { content: string; contentType: string } {
-  const feedConfig = getFeedConfig();
   // For raw format, return JSON with no HTML
   if (format === "raw") {
     const rawItems = formatItems(items, "raw");

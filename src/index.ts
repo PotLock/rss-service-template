@@ -1,28 +1,27 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cache } from "hono/cache";
 import { cors } from "hono/cors";
-import { validateEnv, ALLOWED_ORIGINS } from "./config.js";
+import { etag } from "hono/etag";
+import { secureHeaders } from "hono/secure-headers";
+import { timeout } from "hono/timeout";
+import { ALLOWED_ORIGINS, validateEnv } from "./config.js";
+import { authenticate } from "./middleware/authenticate.js";
+import { rateLimiter } from "./middleware/rate-limit.js";
 import {
-  handleRoot,
-  handleRss,
-  handleAtom,
-  handleJsonFeed,
-  handleRawJson,
-  handleGetItems,
   handleAddItem,
-  handleHealth,
-  handleUpdateConfig,
+  handleAtom,
+  handleCreateFeed,
   handleGetConfig,
+  handleGetItems,
+  handleHealth,
+  handleJsonFeed,
+  handleListFeeds,
+  handleRawJson,
+  handleRss,
+  handleUpdateConfig,
 } from "./routes.js";
-import { authenticate } from "./middleware.js";
-import {
-  rateLimiter,
-  securityHeaders,
-  requestTimeout,
-} from "./middleware/protection.js";
-import { initializeFeed } from "./storage.js";
 
-// Validate environment variables
 try {
   validateEnv();
 } catch (error) {
@@ -30,17 +29,18 @@ try {
   process.exit(1);
 }
 
-// Create Hono app
 const app = new Hono();
 
-// Add security headers to all responses
-app.use("*", securityHeaders);
-
-// Add request timeout protection
-app.use("*", requestTimeout);
-
-// Add rate limiting for public endpoints
-app.use("*", rateLimiter);
+// Global middleware
+app.use("*", timeout(30000)); // 30 second timeout
+app.use(
+  "*",
+  secureHeaders({
+    strictTransportSecurity: "max-age=31536000; includeSubDomains",
+    xFrameOptions: "DENY",
+    xContentTypeOptions: "nosniff",
+  }),
+);
 
 // Global error handler
 app.onError((err, c) => {
@@ -48,7 +48,6 @@ app.onError((err, c) => {
   return c.json({ error: err.message }, 500);
 });
 
-// Configure CORS with specific origins if provided
 app.use(
   "*",
   cors({
@@ -60,23 +59,42 @@ app.use(
   }),
 );
 
-// Apply authentication middleware
-app.use("/api/*", authenticate);
+// Public routes (no authentication required)
+const publicRoutes = new Hono();
+publicRoutes.use("*", rateLimiter);
 
-// Register routes
-app.get("/", handleRoot);
-app.get("/health", handleHealth);
-app.get("/rss.xml", handleRss);
-app.get("/atom.xml", handleAtom);
-app.get("/feed.json", handleJsonFeed);
-app.get("/raw.json", handleRawJson);
-app.get("/api/items", handleGetItems);
-app.post("/api/items", handleAddItem);
-app.get("/api/config", handleGetConfig);
-app.put("/api/config", handleUpdateConfig);
+publicRoutes.get("/", handleHealth);
+publicRoutes.get("/health", handleHealth);
+publicRoutes.get("/api/feeds", handleListFeeds);
 
-// Initialize feed
-await initializeFeed();
+// Feed format routes with caching and ETags
+const feedRoutes = new Hono();
+feedRoutes.use("*", etag());
+feedRoutes.use(
+  "*",
+  cache({
+    cacheName: "rss-feeds",
+    cacheControl: "public, max-age=600", // 10 minutes
+    vary: ["Accept", "Accept-Encoding"],
+  }),
+);
+feedRoutes.get("/:feedId/rss.xml", handleRss);
+feedRoutes.get("/:feedId/atom.xml", handleAtom);
+feedRoutes.get("/:feedId/feed.json", handleJsonFeed);
+feedRoutes.get("/:feedId/raw.json", handleRawJson);
+
+// Protected API routes (authentication required)
+const protectedRoutes = new Hono();
+protectedRoutes.use("*", authenticate);
+protectedRoutes.post("/api/feeds", handleCreateFeed);
+protectedRoutes.get("/api/feeds/:feedId/config", handleGetConfig);
+protectedRoutes.put("/api/feeds/:feedId/config", handleUpdateConfig);
+protectedRoutes.get("/api/feeds/:feedId/items", handleGetItems);
+protectedRoutes.post("/api/feeds/:feedId/items", handleAddItem);
+
+app.route("/", publicRoutes);
+app.route("/", feedRoutes);
+app.route("/", protectedRoutes);
 
 // For local development and container-based deployments (e.g. Railway via Docker)
 if (
@@ -90,13 +108,15 @@ if (
     port,
   });
   console.log(`RSS Service running at http://localhost:${port}`);
-  console.log(`Available formats:`);
-  console.log(`- RSS 2.0: http://localhost:${port}/rss.xml`);
-  console.log(`- Atom: http://localhost:${port}/atom.xml`);
-  console.log(`- JSON Feed: http://localhost:${port}/feed.json`);
-  console.log(`- Raw JSON: http://localhost:${port}/raw.json`);
-  console.log(`- API: http://localhost:${port}/api/items`);
+  console.log(`Multi-feed RSS service with the following endpoints:`);
+  console.log(`- List feeds: http://localhost:${port}/api/feeds`);
+  console.log(`- Create feed: POST http://localhost:${port}/api/feeds`);
+  console.log(`- Feed formats: http://localhost:${port}/{feedId}/{format}`);
+  console.log(`  - RSS 2.0: /{feedId}/rss.xml`);
+  console.log(`  - Atom: /{feedId}/atom.xml`);
+  console.log(`  - JSON Feed: /{feedId}/feed.json`);
+  console.log(`  - Raw JSON: /{feedId}/raw.json`);
+  console.log(`- Feed API: http://localhost:${port}/api/feeds/{feedId}/items`);
 }
 
-// Export for serverless platforms (Netlify, etc)
 export default app;

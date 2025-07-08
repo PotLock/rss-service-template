@@ -1,5 +1,5 @@
 import { Context, Next } from "hono";
-import { API_SECRET } from "./config.js";
+import { API_SECRET } from "../config.js";
 
 /**
  * Authentication middleware
@@ -9,22 +9,6 @@ export async function authenticate(
   c: Context,
   next: Next,
 ): Promise<Response | void> {
-  // Skip authentication for public endpoints
-  const publicPaths = [
-    "/",
-    "/rss.xml",
-    "/atom.xml",
-    "/feed.json",
-    "/raw.json",
-    "/api/items",
-  ];
-  if (
-    c.req.method === "GET" &&
-    (publicPaths.includes(c.req.path) || c.req.path === "/")
-  ) {
-    return await next();
-  }
-
   const authHeader = c.req.header("Authorization");
   if (!authHeader) {
     return c.json(
